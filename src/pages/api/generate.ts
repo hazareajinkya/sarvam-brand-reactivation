@@ -1,63 +1,63 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 
 const SARVAM_API_KEY = process.env.SARVAM_API_KEY || ''
-const API_BASE = 'https://api.sarvam.ai'
+
+async function callSarvam(messages: Array<{role: string, content: string}>, maxTokens: number = 600): Promise<string> {
+  const r = await fetch('https://api.sarvam.ai/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'api-subscription-key': SARVAM_API_KEY, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model: 'sarvam-30b', messages, max_tokens: maxTokens }),
+  })
+  if (!r.ok) throw new Error('Sarvam API: ' + (await r.text()))
+  const d = await r.json()
+  return d.choices?.[0]?.message?.content || ''
+}
+
+async function callTTS(text: string, lang: string): Promise<string> {
+  try {
+    const r = await fetch('https://api.sarvam.ai/text-to-speech', {
+      method: 'POST',
+      headers: { 'api-subscription-key': SARVAM_API_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: 'bulbul:v3', text, voice: 'meera', target_language_code: lang, audio_format: 'wav', sample_rate: 8000 }),
+    })
+    if (!r.ok) return ''
+    const d = await r.json()
+    return d.audios?.[0]?.audio_content || ''
+  } catch { return '' }
+}
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
 
   const { brandName, attributes, customerName, lastPurchase, offer, language } = req.body
   if (!brandName || !attributes || !customerName || !offer) {
-    return res.status(400).json({ error: 'Please fill all fields' })
+    return res.status(400).json({ error: 'कृपया सभी फील्ड भरें' })
   }
 
   try {
-    const attrList = Array.isArray(attributes) ? attributes.join('\\n') : attributes
+    const attrText = Array.isArray(attributes) ? attributes.join('\n') : String(attributes)
     const lang = language || 'hi-IN'
 
-    const genPrompt = 'You are an expert copywriter for \"' + brandName + '\" - a D2C personal care brand.\n\nBrand Personality Attributes:\n' + attrList + '\n\nWrite a short reactivation call script in HINDI for ' + customerName + '.\nLast purchase: ' + (lastPurchase || 'N/A') + '\nOffer: ' + offer + '\n\nRules:\n- Write in Hindi (Devanagari script). The brand has NEVER spoken Hindi.\n- Every sentence must satisfy ALL personality attributes.\n- Do NOT translate English. Write originally in Hindi with brand voice.\n- Warm, not robotic. No call-center tone.\n- Under 120 words.\n- Output only the script, no extra text.'
+    const attrLines = 'Brand Personality Attributes:\n' + attrText
+    const genPrompt = 'You are ' + brandName + ', a D2C brand. ' + attrLines + '\n\nWrite a short reactivation call script in HINDI for ' + customerName + '. Last purchase: ' + (lastPurchase || 'N/A') + '. Offer: ' + offer + '.\n\nRules:\n- Write in Hindi (Devanagari). The brand has NEVER spoken Hindi before.\n- Every sentence must feel like the brand personality attributes above.\n- Do NOT translate from English. Write originally in Hindi.\n- Warm, not call-center tone.\n- Keep under 120 words.\n- Output the script only, nothing else.'
 
-    const genResp = await fetch(API_BASE + '/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'api-subscription-key': SARVAM_API_KEY, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'sarvam-30b', messages: [{ role: 'user', content: genPrompt }], max_tokens: 600, reasoning_effort: null }),
-    })
+    const basePrompt = 'Translate this to Hindi exactly, nothing else:\n\n"Hi ' + customerName + '! This is ' + brandName + ' calling. We noticed you haven\'t shopped with us in a while. Here\'s a special offer: ' + offer + '. Call us or visit our website. Hope to see you soon!"'
 
-    if (!genResp.ok) return res.status(500).json({ error: 'Sarvam API error', detail: await genResp.text() })
+    const [generatedScript, baselineScript] = await Promise.all([
+      callSarvam([{ role: 'user', content: genPrompt }], 600),
+      callSarvam([{ role: 'user', content: basePrompt }], 400),
+    ])
 
-    const genData = await genResp.json()
-    const generatedScript = genData.choices?.[0]?.message?.content || ''
-
-    const baselinePrompt = 'Translate to Hindi exactly. Only the translation, nothing else:\n\n\"Hi ' + customerName + '! This is ' + brandName + ' calling. We noticed you have not shopped with us in a while. Here is a special offer just for you: ' + offer + '. Call us or visit our website today. Hope to see you soon!\"'
-
-    const baseResp = await fetch(API_BASE + '/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'api-subscription-key': SARVAM_API_KEY, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'sarvam-30b', messages: [{ role: 'user', content: baselinePrompt }], max_tokens: 400, reasoning_effort: null }),
-    })
-    const baseData = await baseResp.json()
-    const baselineScript = baseData.choices?.[0]?.message?.content || ''
-
-    async function tts(text: string): Promise<string> {
-      try {
-        const r = await fetch(API_BASE + '/text-to-speech', {
-          method: 'POST',
-          headers: { 'api-subscription-key': SARVAM_API_KEY, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ model: 'bulbul:v3', text, voice: 'meera', target_language_code: lang, audio_format: 'wav', sample_rate: 8000 }),
-        })
-        if (!r.ok) return ''
-        const d = await r.json()
-        return d.audios?.[0]?.audio_content || ''
-      } catch { return '' }
-    }
-
-    const [brandedAudio, baselineAudio] = await Promise.all([tts(generatedScript), tts(baselineScript)])
+    const [brandedAudio, baselineAudio] = await Promise.all([
+      callTTS(generatedScript, lang),
+      callTTS(baselineScript, lang),
+    ])
 
     res.status(200).json({
       generated: { script: generatedScript, audioBase64: brandedAudio },
       baseline: { script: baselineScript, audioBase64: baselineAudio }
     })
-  } catch (error) {
-    res.status(500).json({ error: 'Server error', detail: String(error) })
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Server error' })
   }
 }
