@@ -58,7 +58,7 @@ export default async function handler(req, res) {
 
     const attrLines = 'Brand Personality Attributes:\n' + attrTxt
     const gp = 'You are ' + brandName + ', a D2C brand.\n' + attrLines + '\n\nWrite a short reactivation call script in HINDI for ' + customerName + '. Last purchase: ' + (lastPurchase || 'N/A') + '. Offer: ' + offer + '.\n\nRules:\n- Hindi (Devanagari)\n- Feel like the brand personality\n- Under 120 words\n- Script only'
-    const bp = 'Translate to Hindi:\n\nHi ' + customerName + '! This is ' + brandName + '. We noticed you have not shopped. Special offer: ' + offer + '. Call us!'
+    const bp = 'Translate to Hindi:\n\nHi ' + customerName + '! This is ' + brandName + '. We noticed you have not shopped. Special offer: ' + offer + '. Call us'
 
     const [g, b] = await Promise.all([
       callSarvam([{ role: 'user', content: gp }], 800),
@@ -67,11 +67,11 @@ export default async function handler(req, res) {
 
     let gs = g.content, bs = b.content
     if (!gs && !bs) {
-      gs = 'Namaste ' + customerName + '! Yeh ' + brandName + ' hai. Humne dekha ki apne kuch samay se nahi kharida. Hum apke li for ek vishesh offer laqye hain: ' + offer + '. Kripnya website par jayein. Aapka swagat hai!'
+      gs = 'Namaste ' + customerName + '! Yeh ' + brandName + ' hai. Humne dekha ki apne kuch samay se nahi kharida. Hum apke li for ek vishesh offer laye hain: ' + offer + '. Kripnya website par jayein. Aapka swagat hai!'
       bs = gs
     } else if (!gs) gs = bs
     else if (!bs) bs = gs
-      
+
     const [ba, aa] = await Promise.all([callTTS(gs, lang), callTTS(bs, lang)])
 
     res.json({
