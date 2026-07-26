@@ -1,16 +1,17 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 
 export default function Home() {
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState(null)
   const [error, setError] = useState('')
+  const [scoreVisible, setScoreVisible] = useState(false)
   const [scores, setScores] = useState({})
   const [form, setForm] = useState({
-    brandName: 'बॉम्बे स्किन कंपनी',
-    attributes: 'छोटे और पंची वाक्य बोलता है\nग्राहक को "यार" कहता है\nमजाकिया और बेबाक अंदाज\nप्रतियोगियों को मजाक में लेता है\nथोड़ा शरारती लहजा',
-    customerName: 'सुमन',
-    lastPurchase: '4 महीने पहले बॉडी लोशन खरीदा',
-    offer: '20% छूट + फ्री शिपिंग',
+    brandName: 'Bombay Skin Co.',
+    attributes: 'Uses short punchy sentences\nCalls the customer "yaar"\nPlayful, irreverent tone\nMakes fun of competitors\nSlightly mischievous attitude',
+    customerName: 'Suman',
+    lastPurchase: 'Bought Body Lotion 4 months ago',
+    offer: '20% off + Free shipping',
     language: 'hi-IN'
   })
 
@@ -20,6 +21,7 @@ export default function Home() {
     setLoading(true)
     setError('')
     setResult(null)
+    setScoreVisible(false)
     setScores({})
     try {
       const res = await fetch('/api/generate', {
@@ -28,7 +30,7 @@ export default function Home() {
         body: JSON.stringify(form)
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'कुछ गड़बड़ हो गई')
+      if (!res.ok) throw new Error(data.error || 'Something went wrong')
       setResult(data)
     } catch (e) {
       setError(e.message)
@@ -43,72 +45,153 @@ export default function Home() {
 
   const attrList = form.attributes.split('\n').filter(a => a.trim())
 
+  const getSrc = (b64) => {
+    if (!b64) return ''
+    return 'data:audio/wav;base64,' + b64
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-rose-100 p-4 md:p-8">
-      <main className="max-w-5xl mx-auto space-y-4">
-        <div className="text-center mb-6">
-          <h1 className="text-4xl md:text-5xl font-extrabold bg-gradient-to-r from-orange-600 to-rose-600 bg-clip-text text-transparent">
-            🗣️ ब्रांड वॉयस रिएक्टिवेशन
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-orange-50 p-4 md:p-8">
+      <main className="max-w-6xl mx-auto">
+        <div className="text-center mb-8">
+          <h1 className="text-5xl font-black tracking-tight">
+            <span className="bg-gradient-to-r from-orange-500 to-rose-600 bg-clip-text text-transparent">
+              Brand Voice Reactivation
+            </span>
           </h1>
-          <p className="text-gray-600 mt-1 text-lg">अपने ब्रांड की पर्सनैलिटी को हिंदी में ज़िंदा रखें</p>
+          <p className="text-gray-500 mt-2 text-lg">
+            Make your brand sound like your brand — in a language it has never spoken before
+          </p>
         </div>
 
-        <div className="bg-white/80 backdrop-blur rounded-2xl shadow-lg p-6 border border-orange-200">
-          <h2 className="text-xl font-bold text-gray-800 mb-1">१. ब्रांड पर्सनैलिटी</h2>
-          <p className="text-sm text-gray-500 mb-3">अपने ब्रांड के ३-५ गुण लिखें</p>
-          <input name="brandName" value={form.brandName} onChange={handleChange} placeholder="ब्रांड का नाम" className="w-full p-3 border border-gray-200 rounded-xl mb-3 focus:outline-none focus:ring-2 focus:ring-orange-400" />
-          <textarea name="attributes" value={form.attributes} onChange={handleChange} rows={4} className="w-full p-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-400" />
-        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+          <div className="lg:col-span-2 space-y-4">
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+              <h2 className="font-bold text-lg mb-1">1. Brand Personality</h2>
+              <p className="text-sm text-gray-400 mb-3">Define 3-5 testable attributes (not adjectives)</p>
+              <textarea name="attributes" value={form.attributes} onChange={handleChange} className="w-full p-3 border border-gray-200 rounded-xl text-sm font-mono" rows={5} />
+              <input name="brandName" value={form.brandName} onChange={handleChange} className="w-full p-3 border border-gray-200 rounded-xl mt-3" placeholder="Brand name" />
+            </div>
 
-        <div className="bg-white/80 backdrop-blur rounded-2xl shadow-lg p-6 border border-orange-200">
-          <h2 className="text-xl font-bold text-gray-800 mb-1">२. ग्राहक और ऑफर</h2>
-          <div className="grid md:grid-cols-3 gap-3">
-            <input name="customerName" value={form.customerName} onChange={handleChange} placeholder="ग्राहक" className="p-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-400" />
-            <input name="lastPurchase" value={form.lastPurchase} onChange={handleChange} placeholder="आखिरी खरीद" className="p-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-400" />
-            <input name="offer" value={form.offer} onChange={handleChange} placeholder="ऑफर" className="p-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-400" />
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+              <h2 className="font-bold text-lg mb-3">2. Customer & Offer</h2>
+              <div className="grid grid-cols-2 gap-3">
+                <input name="customerName" value={form.customerName} onChange={handleChange} className="p-3 border border-gray-200 rounded-xl" placeholder="Customer name" />
+                <select name="language" value={form.language} onChange={handleChange} className="p-3 border border-gray-200 rounded-xl bg-white">
+                  <option value="hi-IN">Hindi</option>
+                  <option value="mr-IN">Marathi</option>
+                </select>
+              </div>
+              <input name="lastPurchase" value={form.lastPurchase} onChange={handleChange} className="w-full p-3 border border-gray-200 rounded-xl mt-3" placeholder="Last purchase" />
+              <input name="offer" value={form.offer} onChange={handleChange} className="w-full p-3 border border-gray-200 rounded-xl mt-3" placeholder="Reactivation offer" />
+            </div>
+
+            <button onClick={handleGenerate} disabled={loading} className="w-full py-4 bg-gradient-to-r from-orange-500 to-rose-500 text-white font-bold text-lg rounded-xl hover:shadow-lg hover:scale-[1.01] transition-all disabled:opacity-50">
+              {loading ? 'Generating...' : 'Generate Scripts →'}
+            </button>
+
+            {error && <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-xl">{error}</div>}
+          </div>
+
+          <div className="space-y-4">
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
+              <h3 className="font-semibold text-sm text-gray-700 mb-2">Attributes</h3>
+              {attrList.map((a, i) => (
+                <div key={i} className="text-xs py-1.5 px-2 mb-1 bg-gray-50 rounded-lg text-gray-600">
+                  {a}
+                </div>
+              ))}
+            </div>
+            <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-2xl p-4 border border-purple-100">
+              <h3 className="font-semibold text-sm text-purple-800">How this works</h3>
+              <p className="text-xs text-purple-600 mt-1">Sarvam-30B generates the script <strong>in Hindi</strong> constrained by your attributes. The baseline is a neutral machine translation. A native speaker scores both.</p>
+            </div>
           </div>
         </div>
 
-        <button onClick={handleGenerate} disabled={loading}
-          className="w-full bg-gradient-to-r from-orange-500 to-rose-500 text-white py-4 rounded-2xl font-bold text-lg hover:from-orange-600 hover:to-rose-600 transition-all shadow-lg disabled:opacity-50">
-          {loading ? '⏳ बना रहे हैं...' : '🎯 ब्रांड स्क्रिप्ट जनरेट करें'}
-        </button>
-
-        {error && <div className="bg-red-50 text-red-600 p-4 rounded-xl text-center">{error}</div>}
-
         {result && (
-          <>
-            <h2 className="text-2xl font-bold text-gray-800 text-center">३. A/B तुलना</h2>
-            <div className="grid md:grid-cols-2 gap-4">
-              <div className="bg-white rounded-2xl shadow-lg p-5 border border-red-200">
-                <h3 className="font-bold text-red-500 mb-2">❌ मशीन अनुवाद</h3>
-                <div className="bg-gray-50 p-3 rounded-xl mb-3 text-sm text-gray-700 whitespace-pre-wrap">{result.baseline?.script || '—'}</div>
-                {result.baseline?.audioBase64 && <audio controls className="w-full" src={`data:audio/wav;base64,${result.baseline.audioBase64}`} />}
+          <div className="bg-white rounded-2xl shadow-lg border-2 border-orange-100 p-6 mt-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold">A/B Comparison</h2>
+              <span className="text-xs text-gray-400 bg-gray-100 px-3 py-1 rounded-full">
+                Language: {form.language === 'hi-IN' ? 'Hindi' : 'Marathi'}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-gray-50 rounded-xl p-4 border-2 border-gray-200">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center text-red-600 font-bold">B</div>
+                  <div>
+                    <h3 className="font-bold text-sm">Baseline (Machine Translated)</h3>
+                    <p className="text-xs text-gray-400">Neutral translation of English script</p>
+                  </div>
+                </div>
+                {result.baseline?.audioBase64 ? (
+                  <audio controls src={getSrc(result.baseline.audioBase64)} className="w-full h-10" />
+                ) : (
+                  <div className="h-10 bg-gray-200 rounded-lg flex items-center justify-center text-xs text-gray-400">Audio unavailable</div>
+                )}
+                <pre className="text-xs mt-2 text-gray-500 whitespace-pre-wrap bg-gray-100 p-2 rounded-lg max-h-32 overflow-y-auto">
+                  {result.baseline?.script || 'No script'}
+                </pre>
               </div>
-              <div className="bg-white rounded-2xl shadow-lg p-5 border-2 border-green-400">
-                <h3 className="font-bold text-green-600 mb-2">✅ हमारा ब्रांड वर्ज़न</h3>
-                <div className="bg-green-50 p-3 rounded-xl mb-3 text-sm text-gray-700 whitespace-pre-wrap">{result.generated?.script || '—'}</div>
-                {result.generated?.audioBase64 && <audio controls className="w-full" src={`data:audio/wav;base64,${result.generated.audioBase64}`} />}
+
+              <div className="bg-green-50 rounded-xl p-4 border-2 border-green-300">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center text-green-600 font-bold">A</div>
+                  <div>
+                    <h3 className="font-bold text-sm">Brand Generated</h3>
+                    <p className="text-xs text-green-600">Sarvam-30B personality-constrained</p>
+                  </div>
+                </div>
+                {result.generated?.audioBase64 ? (
+                  <audio controls src={getSrc(result.generated.audioBase64)} className="w-full h-10" />
+                ) : (
+                  <div className="h-10 bg-green-100 rounded-lg flex items-center justify-center text-xs text-green-500">Audio unavailable</div>
+                )}
+                <pre className="text-xs mt-2 text-green-700 whitespace-pre-wrap bg-green-100 p-2 rounded-lg max-h-32 overflow-y-auto">
+                  {result.generated?.script || 'No script'}
+                </pre>
               </div>
             </div>
 
-            <div className="bg-white rounded-2xl shadow-lg p-6">
-              <h3 className="text-lg font-bold text-gray-800 mb-3">४. स्कोरिंग</h3>
-              <table className="w-full text-sm">
-                <thead><tr className="border-b"><th className="text-left py-2">अट्रीब्यूट</th><th className="py-2 text-red-500">बेसलाइन</th><th className="py-2 text-green-600">ब्रांड</th></tr></thead>
-                <tbody>
-                  {attrList.map((attr, i) => (
-                    <tr key={i} className="border-b border-gray-100">
-                      <td className="py-2 font-medium">{attr}</td>
-                      <td className="py-2"><div className="flex gap-1">{[1,2,3,4,5].map(v => <button key={v} onClick={() => handleScore(attr,'baseline',v)} className={`w-7 h-7 rounded-full text-xs ${(scores[attr]?.baseline||0)===v?'bg-red-500 text-white':'bg-gray-200'}`}>{v}</button>)}</div></td>
-                      <td className="py-2"><div className="flex gap-1">{[1,2,3,4,5].map(v => <button key={v} onClick={() => handleScore(attr,'generated',v)} className={`w-7 h-7 rounded-full text-xs ${(scores[attr]?.generated||0)===v?'bg-green-500 text-white':'bg-gray-200'}`}>{v}</button>)}</div></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </>
+            <button onClick={() => setScoreVisible(!scoreVisible)} className="mt-4 text-sm text-orange-600 hover:text-orange-800 font-medium">
+              {scoreVisible ? 'Hide Scoring' : '+ Score Attributes'}
+            </button>
+
+            {scoreVisible && (
+              <div className="mt-4 bg-gray-50 rounded-xl p-4">
+                <h4 className="font-semibold text-sm mb-3">Score each attribute (1-5)</h4>
+                {attrList.map((attr, i) => {
+                  const attrKey = attr.toLowerCase().replace(/\s+/g, '-')
+                  return (
+                    <div key={i} className="grid grid-cols-1 md:grid-cols-3 gap-3 items-center mb-2 bg-white p-3 rounded-lg text-sm">
+                      <span className="font-medium text-xs text-gray-600">{attr}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-red-600 w-16">Baseline:</span>
+                        <input type="range" min="1" max="5" value={scores[attrKey]?.baseline || 1} onChange={e => handleScore(attrKey, 'baseline', e.target.value)} className="flex-1" />
+                        <span className="text-xs w-4">{scores[attrKey]?.baseline || 1}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-green-600 w-16">Generated:</span>
+                        <input type="range" min="1" max="5" value={scores[attrKey]?.generated || 1} onChange={e => handleScore(attrKey, 'generated', e.target.value)} className="flex-1" />
+                        <span className="text-xs w-4">{scores[attrKey]?.generated || 1}</span>
+                      </div>
+                    </div>
+                  )
+                })}
+                <div className="mt-3 text-xs text-gray-400">
+                  Total baseline: {Object.values(scores).reduce((s, v) => s + (v.baseline || 1), 0)} / {attrList.length * 5} | Generated: {Object.values(scores).reduce((s, v) => s + (v.generated || 1), 0)} / {attrList.length * 5}
+                </div>
+              </div>
+            )}
+          </div>
         )}
+
+        <div className="text-center mt-8 text-xs text-gray-300">
+          Built for Sarvam Epoch Buildathon | Sarvam-30B + Bulbul TTS
+        </div>
       </main>
     </div>
   )
