@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 
 export default function Home() {
   const [loading, setLoading] = useState(false)
@@ -8,7 +8,7 @@ export default function Home() {
   const [scores, setScores] = useState({})
   const [form, setForm] = useState({
     brandName: 'Bombay Skin Co.',
-    attributes: 'Uses short punchy sentences\nCalls the customer "yaar"\nPlayful, irreverent tone\nMakes fun of competitors\nSlightly mischievous attitude',
+    attributes: 'Uses short punchy sentences\nCalls the customer "yaar"\nPlayful irreverent tone\nMakes fun of competitors\nSlightly mischievous attitude',
     customerName: 'Suman',
     lastPurchase: 'Bought Body Lotion 4 months ago',
     offer: '20% off + Free shipping',
@@ -40,7 +40,8 @@ export default function Home() {
   }
 
   const handleScore = (attr, type, v) => {
-    setScores(prev => ({...prev, [attr]: {...(prev[attr] || {}), [type]: parseInt(v)}}))
+    const val = parseInt(v)
+    setScores(prev => ({...prev, [attr]: {...(prev[attr] || {}), [type]: val}}))
   }
 
   const attrList = form.attributes.split('\n').filter(a => a.trim())
@@ -48,6 +49,15 @@ export default function Home() {
   const getSrc = (b64) => {
     if (!b64) return ''
     return 'data:audio/wav;base64,' + b64
+  }
+
+  const calcTotal = (type) => {
+    let total = 0
+    for (const key of Object.keys(scores)) {
+      if (scores[key] && scores[key][type]) total += scores[key][type]
+      else total += 1
+    }
+    return total
   }
 
   return (
@@ -86,8 +96,8 @@ export default function Home() {
               <input name="offer" value={form.offer} onChange={handleChange} className="w-full p-3 border border-gray-200 rounded-xl mt-3" placeholder="Reactivation offer" />
             </div>
 
-            <button onClick={handleGenerate} disabled={loading} className="w-full py-4 bg-gradient-to-r from-orange-500 to-rose-500 text-white font-bold text-lg rounded-xl hover:shadow-lg hover:scale-[1.01] transition-all disabled:opacity-50">
-              {loading ? 'Generating...' : 'Generate Scripts →'}
+            <button onClick={handleGenerate} disabled={loading} className="w-full py-4 bg-gradient-to-r from-orange-500 to-rose-500 text-white font-bold text-lg rounded-xl hover:shadow-lg transition-all disabled:opacity-50">
+              {loading ? 'Generating...' : 'Generate Scripts'}
             </button>
 
             {error && <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-xl">{error}</div>}
@@ -104,7 +114,7 @@ export default function Home() {
             </div>
             <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-2xl p-4 border border-purple-100">
               <h3 className="font-semibold text-sm text-purple-800">How this works</h3>
-              <p className="text-xs text-purple-600 mt-1">Sarvam-30B generates the script <strong>in Hindi</strong> constrained by your attributes. The baseline is a neutral machine translation. A native speaker scores both.</p>
+              <p className="text-xs text-purple-600 mt-1">Sarvam-30B generates the script in Hindi constrained by your attributes. The baseline is a neutral machine translation. A native speaker scores both.</p>
             </div>
           </div>
         </div>
@@ -165,24 +175,26 @@ export default function Home() {
                 <h4 className="font-semibold text-sm mb-3">Score each attribute (1-5)</h4>
                 {attrList.map((attr, i) => {
                   const attrKey = attr.toLowerCase().replace(/\s+/g, '-')
+                  const s = scores[attrKey] || {}
                   return (
                     <div key={i} className="grid grid-cols-1 md:grid-cols-3 gap-3 items-center mb-2 bg-white p-3 rounded-lg text-sm">
                       <span className="font-medium text-xs text-gray-600">{attr}</span>
                       <div className="flex items-center gap-2">
                         <span className="text-xs text-red-600 w-16">Baseline:</span>
-                        <input type="range" min="1" max="5" value={scores[attrKey]?.baseline || 1} onChange={e => handleScore(attrKey, 'baseline', e.target.value)} className="flex-1" />
-                        <span className="text-xs w-4">{scores[attrKey]?.baseline || 1}</span>
+                        <input type="range" min="1" max="5" value={s.baseline || 1} onChange={e => handleScore(attrKey, 'baseline', e.target.value)} className="flex-1" />
+                        <span className="text-xs w-4">{s.baseline || 1}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-xs text-green-600 w-16">Generated:</span>
-                        <input type="range" min="1" max="5" value={scores[attrKey]?.generated || 1} onChange={e => handleScore(attrKey, 'generated', e.target.value)} className="flex-1" />
-                        <span className="text-xs w-4">{scores[attrKey]?.generated || 1}</span>
+                        <input type="range" min="1" max="5" value={s.generated || 1} onChange={e => handleScore(attrKey, 'generated', e.target.value)} className="flex-1" />
+                        <span className="text-xs w-4">{s.generated || 1}</span>
                       </div>
                     </div>
                   )
                 })}
                 <div className="mt-3 text-xs text-gray-400">
-                  Total baseline: {Object.values(scores).reduce((s, v) => s + (v.baseline || 1), 0)} / {attrList.length * 5} | Generated: {Object.values(scores).reduce((s, v) => s + (v.generated || 1), 0)} / {attrList.length * 5}
+                  Total baseline: {calcTotal('baseline')} / {attrList.length * 5} |
+                  Generated: {calcTotal('generated')} / {attrList.length * 5}
                 </div>
               </div>
             )}
