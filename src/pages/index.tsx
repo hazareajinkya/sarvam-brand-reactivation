@@ -1,4 +1,4 @@
-import{useState,useEffect,useRef,useCallback}from'react'
+import React,{useState,useEffect,useRef,useCallback}from'react'
 const sbw=(t,l='hi-IN')=>{if(typeof window==='undefined'||!('speechSynthesis'in window))return false
 const u=new SpeechSynthesisUtterance(t);u.lang=l;u.rate=.95;u.pitch=1
 const v=window.speechSynthesis.getVoices();const p=v.find(x=>x.lang?.startsWith('hi'))
