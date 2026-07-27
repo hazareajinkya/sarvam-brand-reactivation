@@ -1,8 +1,8 @@
 import{useState,useEffect,useRef,useCallback}from'react'
-const sbw=(t,l='hi-IN')=>{if(typeof window==='undefined'||!('speechSynthesis'in window))return
+const sbw=(t,l='hi-IN')=>{if(typeof window==='undefined'||!('speechSynthesis'in window))return false
 const u=new SpeechSynthesisUtterance(t);u.lang=l;u.rate=.95;u.pitch=1
 const v=window.speechSynthesis.getVoices();const p=v.find(x=>x.lang?.startsWith('hi'))
-if(p)u.voice=p;window.speechSynthesis.cancel();window.speechSynthesis.speak(u)}
+if(p)u.voice=p;window.speechSynthesis.cancel();window.speechSynthesis.speak(u);return true}
 export default function Home(){const[L,sL]=useState(0);const[R,sR]=useState(null);const[E,sE]=useState('')
 const[SP,sSP]=useState(null);const AR=useRef(null)
 const[F,sf]=useState({brandName:'Bombay Skin Co.',attributes:'Uses short punchy sentences\nCalls the customer "yaar"\nPlayful irreverent tone\nMakes fun of competitors\nSlightly mischievous attitude',customerName:'Suman',lastPurchase:'Bought Body Lotion 4 months ago',offer:'20% off + Free shipping',language:'hi-IN'})
@@ -12,7 +12,7 @@ const hG=async()=>{sL(1);sE('');sR(null);try{const r=await fetch('/api/generate'
 const pA=useCallback((s,b64,t)=>{if(SP===t){window.speechSynthesis?.cancel();sSP(null);return}
 window.speechSynthesis?.cancel()
 if(b64&&AR.current){AR.current.src='data:audio/wav;base64,'+b64;AR.current.play().catch(()=>{});sSP(t);return}
-if(s&&sbw(s)){sSP(t);const ci=setInterval(()=>{if(!window.speechSynthesis.speaking){clearInterval(ci);sSP(null)}},200)}},[SP])
+if(s){const ok=sbw(s);if(ok){sSP(t);const ci=setInterval(()=>{if(!window.speechSynthesis.speaking){clearInterval(ci);sSP(null)}},200)}}},[SP])
 const AL=F.attributes.split('\n').filter(a=>a.trim())
 const Btn=({s,b,t,l})=>{const iS=SP===t;const hB=!!b;const hS=!!s;const fb=hS&&!hB
 if(!hS&&!hB)return<div className="h-10 bg-gray-200 rounded-lg flex items-center justify-center text-xs text-gray-400">No script</div>
