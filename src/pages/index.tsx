@@ -171,7 +171,7 @@ export default function Home() {
           </div>
 
           <div className={STYLES.sidebar}>
-            <div className={`${STYLES.card} p-4}>
+            <div className={`${STYLES.card} p-4`}>
               <h3 className="text-sm font-semibold text-gray-200 mb-3">Attributes</h3>
               <div className="space-y-1.5">
                 {attrList.map((a, i) => (
@@ -207,7 +207,7 @@ export default function Home() {
           <div className="mt-8 bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 p-6 md:p-8 shadow-2xl">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold bg-gradient-to-r from-orange-400 to-rose-400 bg-clip-text text-transparent">A/B Comparison</h2>
-              <span className={STYLES.tag}>Anika (ElevenLabs) ♦ Hindi</span>
+              <span className={STYLES.tag}>Anika (ElevenLabs) ☦ Hindi</span>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="bg-white/5 rounded-2xl p-5 border border-white/10">
