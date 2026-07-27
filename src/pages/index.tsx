@@ -96,7 +96,7 @@ export default function Home() {
   useEffect(() => {
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       window.speechSynthesis.getVoices()
-      window.speechSynthesis.onvoiceshanged = () => window.speechSynthesis.getVoices()
+      window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices()
     }
   }, [])
 
@@ -171,7 +171,7 @@ export default function Home() {
           </div>
 
           <div className={STYLES.sidebar}>
-            <div className={`${STYLES.card} p-4`}>
+            <div className={`${STYLES.card} p-4}>
               <h3 className="text-sm font-semibold text-gray-200 mb-3">Attributes</h3>
               <div className="space-y-1.5">
                 {attrList.map((a, i) => (
